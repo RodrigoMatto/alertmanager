@@ -1,0 +1,110 @@
+global:
+  resolve_timeout: 5m
+inhibit_rules:
+  - equal:
+      - namespace
+      - alertname
+    source_match:
+      severity: critical
+    target_match_re:
+      severity: warning|info
+  - equal:
+      - namespace
+      - alertname
+    source_match:
+      severity: warning
+    target_match_re:
+      severity: warning
+receivers:
+  - name: Default
+  - name: Watchdog
+  - name: Warning
+    email_configs:
+      - to: 'soporteservidores@itau.com,gestoresdecambio@itau.com.py,plataformasti@itau.com.py,jorge.mendoza@itau.com.py,guillermo.guppy@itau.com.py'
+        from: openshiftprd@itau.com.py
+        smarthost: '10.82.8.4:25'
+        hello: correo.interbanco.com.py
+        require_tls: false
+        headers:
+          subject: >-
+            [{{ .CommonLabels.severity | toUpper }}] {{ .Status | toUpper }} |
+            {{ .CommonLabels.namespace }}: {{ .CommonLabels.alertname }}
+        html: |-
+          <h3>You have the following alerts:</h3>
+          {{ range .Alerts }}
+          <p><b>{{.Labels.alertname}}</b>
+            <ul>{{ range .Annotations.SortedPairs }}
+            <li>{{ .Name }} = {{ .Value }}</li>
+            {{ end }}</ul>
+            <ul>{{ range .Labels.SortedPairs }}
+            <li>{{ .Name }} = {{ .Value }}</li>
+            {{ end }}</ul>
+            {{ .GeneratorURL }}</p>
+          {{ end }}
+        text: |-
+          You have the following alerts:
+          {{ range .Alerts }}
+          * {{.Labels.alertname}}
+            {{ range .Annotations.SortedPairs }}
+            {{ .Name }} = {{ .Value }}
+            {{ end }}
+            {{ range .Labels.SortedPairs }}
+            {{ .Name }} = {{ .Value }}
+            {{ end }}
+            {{ .GeneratorURL }}
+          {{ end }}
+  - name: Critical
+    email_configs:
+      - to: 'soporteservidores@itau.com,gestoresdecambio@itau.com.py,plataformasti@itau.com.py,jorge.mendoza@itau.com.py,guillermo.guppy@itau.com.py'
+        from: openshiftprd@itau.com.py
+        smarthost: '10.82.8.4:25'
+        hello: correo.interbanco.com.py
+        require_tls: false
+        headers:
+          subject: >-
+            [{{ .CommonLabels.severity | toUpper }}] {{ .Status | toUpper }} |
+            {{ .CommonLabels.namespace }}: {{ .CommonLabels.alertname }}
+        html: |-
+          <h3>You have the following alerts:</h3>
+          {{ range .Alerts }}
+          <p><b>{{.Labels.alertname}}</b>
+            <ul>{{ range .Annotations.SortedPairs }}
+            <li>{{ .Name }} = {{ .Value }}</li>
+            {{ end }}</ul>
+            <ul>{{ range .Labels.SortedPairs }}
+            <li>{{ .Name }} = {{ .Value }}</li>
+            {{ end }}</ul>
+            {{ .GeneratorURL }}</p>
+          {{ end }}
+        text: |-
+          You have the following alerts:
+          {{ range .Alerts }}
+          * {{.Labels.alertname}}
+            {{ range .Annotations.SortedPairs }}
+            {{ .Name }} = {{ .Value }}
+            {{ end }}
+            {{ range .Labels.SortedPairs }}
+            {{ .Name }} = {{ .Value }}
+            {{ end }}
+            {{ .GeneratorURL }}
+          {{ end }}
+route:
+  group_by:
+    - namespace
+  group_interval: 5m
+  group_wait: 30s
+  receiver: Default
+  repeat_interval: 12h
+  routes:
+    - match:
+        alertname: Watchdog
+      receiver: Watchdog
+    - match:
+        severity: critical
+      receiver: Critical
+    - receiver: Warning_Alerts
+      match:
+        severity: warning
+    - receiver: Critical_Alerts
+      match:
+        severity: critical
