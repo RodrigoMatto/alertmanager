@@ -1,0 +1,1 @@
+oc -n openshift-monitoring port-forward svc/alertmanager-operated 9093
